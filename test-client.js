@@ -1,10 +1,15 @@
 // 自动化测试：模拟两个 WS 客户端走核心流程
 const WebSocket = require('ws');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 const PORT = 8000;
+const HOST = process.env.HOST || 'localhost';
+const PROXY = process.env.PROXY || '';
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
 function mkClient(){
-  const ws = new WebSocket(`ws://localhost:${PORT}`);
+  const url = HOST==='localhost' ? `ws://localhost:${PORT}` : `wss://${HOST}`;
+  const opts = PROXY ? { agent: new HttpsProxyAgent(PROXY) } : {};
+  const ws = new WebSocket(url, opts);
   ws._buf = [];
   ws.on('message', d => ws._buf.push(JSON.parse(d)));
   ws.next = (pred, timeout=6000) => new Promise((res, rej) => {
