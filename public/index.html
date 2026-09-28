@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>好友大富翁 · 联网版</title>
+<style>
+:root{
+  --brown:#8b5a2b;--lblue:#aae0ff;--pink:#ff7eb6;--orange:#ffb347;
+  --red:#e23b3b;--yellow:#ffd23f;--green:#2e8b57;--dblue:#1b3a8b;
+  --bg:#0f1320;--panel:#1a2030;--panel2:#222a3d;--line:#33405c;
+  --txt:#e8ecf5;--dim:#9aa6bd;--accent:#ffd23f;--good:#3fd07e;--bad:#ff5d5d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:radial-gradient(1200px 800px at 70% -10%,#1c2440,var(--bg));color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;display:flex;flex-direction:column;min-height:100%}
+.topbar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:linear-gradient(90deg,#161b2c,#1d2438);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.topbar h1{font-size:16px;letter-spacing:1px;white-space:nowrap}
+.topbar h1 span{color:var(--accent)}
+.topbar .turn-info{margin-left:auto;display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
+.pill{padding:3px 9px;border-radius:999px;background:#0c1020;border:1px solid var(--line);font-size:11px;color:var(--dim)}
+.pill b{color:var(--txt)}
+.btn{border:1px solid var(--line);background:var(--panel2);color:var(--txt);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:13px;transition:.15s}
+.btn:hover{border-color:var(--accent);background:#2a3349}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:linear-gradient(90deg,#e0a82e,#ffd23f);color:#1a1206;border-color:#ffd23f;font-weight:600}
+.btn.danger{border-color:#7a2b2b;color:#ff9f9f}
+.btn.danger:hover{background:#3a1c1c}
+.btn.small{padding:4px 8px;font-size:11px}
+.main{display:flex;gap:12px;padding:12px;flex:1;min-height:0}
+.board-wrap{flex:0 0 auto}
+.board{width:min(80vh,600px);height:min(80vh,600px);display:grid;grid-template-columns:repeat(11,1fr);grid-template-rows:repeat(11,1fr);background:var(--panel);border:2px solid var(--line);border-radius:10px;position:relative;gap:1px}
+.cell{background:#10172a;border:1px solid #2a3550;position:relative;display:flex;flex-direction:column;overflow:hidden;font-size:9px}
+.cell .bar{height:10px;flex:0 0 10px}
+.cell .nm{padding:2px 3px;text-align:center;line-height:1.05;color:var(--txt)}
+.cell .pr{margin-top:auto;padding:1px 3px;text-align:center;color:var(--accent);font-size:9px}
+.cell .own{position:absolute;top:1px;right:1px;width:8px;height:8px;border-radius:50%;border:1px solid #000}
+.cell .houses{position:absolute;bottom:1px;left:1px;display:flex;gap:1px}
+.cell .houses i{width:5px;height:5px;background:#5fd0ff;border-radius:1px}
+.cell .houses i.hotel{background:#ff7e7e;width:8px}
+.cell .tok{position:absolute;bottom:1px;right:1px;display:flex;gap:1px;flex-wrap:wrap;max-width:18px}
+.cell .tok i{width:8px;height:8px;border-radius:50%;border:1.5px solid #000;display:block}
+.cell.corner{font-size:11px;justify-content:center;align-items:center;text-align:center}
+.cell.corner .nm{font-size:10px;font-weight:600}
+.cell .ev{font-size:8px;color:var(--dim);text-align:center;padding:0 2px}
+.center{grid-row:2/11;grid-column:2/11;background:linear-gradient(160deg,#11192e,#0c1222);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;gap:8px;text-align:center}
+.center .logo{font-size:22px;font-weight:800;letter-spacing:2px;color:var(--accent);text-shadow:0 2px 12px #000}
+.center .dice-box{display:flex;gap:12px;margin:4px 0}
+.die{width:48px;height:48px;background:#fff;color:#1a1206;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.5);border:1px solid #ddd}
+.center .roll-res{font-size:12px;color:var(--dim);min-height:16px}
+.side{flex:1;min-width:260px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.players{display:flex;flex-direction:column;gap:7px}
+.player{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;border-left:5px solid #555}
+.player.active{box-shadow:0 0 0 2px var(--accent);border-left-color:var(--accent)}
+.player .top{display:flex;align-items:center;gap:7px}
+.player .av{width:22px;height:22px;border-radius:50%;border:2px solid #000;flex:0 0 auto}
+.player .name{font-weight:600;font-size:13px}
+.player .cash{margin-left:auto;font-size:13px;color:var(--good);font-weight:700}
+.player .meta{font-size:10px;color:var(--dim);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap}
+.player .meta .props{color:var(--lblue)}
+.player .items{display:flex;gap:3px;margin-top:4px;flex-wrap:wrap}
+.item-chip{font-size:10px;padding:2px 5px;border-radius:5px;background:#2a3350;border:1px solid #3a4664;cursor:default}
+.item-chip.use{cursor:pointer}
+.item-chip.use:hover{border-color:var(--accent)}
+.log{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;flex:1;min-height:100px;overflow-y:auto;font-size:11px;line-height:1.5}
+.log .li{padding:1px 0;color:var(--dim)}
+.log .li.good{color:var(--good)} .log .li.bad{color:var(--bad)} .log .li.evt{color:#ffd23f}
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;z-index:50;align-items:center;justify-content:center;padding:14px}
+.mask.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:min(440px,94vw);max-height:86vh;overflow:auto;padding:16px}
+.modal h2{font-size:16px;margin-bottom:8px}
+.modal .row{margin:7px 0;font-size:12px;line-height:1.6}
+.modal .actions{display:flex;gap:7px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+.field{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:12px}
+.field label{width:78px;color:var(--dim)}
+.field input,.field select{flex:1;background:#0c1222;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:12px}
+.list{display:flex;flex-direction:column;gap:4px;max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:5px}
+.opt{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:7px;cursor:pointer;font-size:12px}
+.opt:hover{background:#222a3d}
+.opt.sel{background:#2a3349;border:1px solid var(--accent)}
+.opt .swatch{width:13px;height:13px;border-radius:3px;border:1px solid #000;flex:0 0 auto}
+.start-screen{position:fixed;inset:0;background:radial-gradient(900px 600px at 50% -10%,#26305a,#0f1320);display:flex;align-items:center;justify-content:center;z-index:100;padding:14px}
+.start-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(400px,92vw)}
+.start-card h1{font-size:24px;text-align:center;color:var(--accent);margin-bottom:6px}
+.start-card p{font-size:11px;color:var(--dim);text-align:center;margin-bottom:14px;line-height:1.6}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs .tab{flex:1;text-align:center;padding:7px;border-radius:7px;background:#0c1222;border:1px solid var(--line);cursor:pointer;font-size:12px}
+.tabs .tab.sel{background:#2a3349;border-color:var(--accent);color:var(--accent)}
+.lobby{font-size:12px}
+.lobby .code-row{display:flex;align-items:center;gap:8px;background:#0c1222;padding:8px;border-radius:8px;margin:8px 0}
+.lobby .code-row b{font-size:20px;color:var(--accent);letter-spacing:2px}
+.lobby .plist{display:flex;flex-direction:column;gap:4px;margin:8px 0}
+.lobby .pl{display:flex;align-items:center;gap:8px;background:#0c1222;padding:6px 8px;border-radius:7px;font-size:12px}
+.lobby .pl .sw{width:14px;height:14px;border-radius:3px;border:1px solid #000}
+.win-screen{text-align:center}
+.win-screen .crown{font-size:42px;margin:4px 0}
+.conn-status{font-size:11px;color:var(--dim)}
+.conn-status.on{color:var(--good)}
+.err-toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:#3a1c1c;border:1px solid #7a2b2b;color:#ffd0d0;padding:8px 14px;border-radius:8px;z-index:200;font-size:12px;display:none}
+.err-toast.show{display:block}
+.waiting{text-align:center;color:var(--dim);font-size:13px;padding:20px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>🎲 好友<span>大富翁</span> <span class="conn-status" id="connStatus">连接中…</span></h1>
+  <div class="turn-info">
+    <div class="pill" id="phasePill">大厅</div>
+    <div class="pill">回合 <b id="turnNum">1</b></div>
+    <div class="pill">当前 <b id="curPlayer">—</b></div>
+    <button class="btn small" id="btnTrade">🤝 交易</button>
+    <button class="btn small" id="btnBuild">🔨 建房</button>
+    <button class="btn small danger" id="btnResign">🏳️ 认输</button>
+  </div>
+</div>
+
+<div class="main" id="gameMain" style="display:none">
+  <div class="board-wrap"><div class="board" id="board"></div></div>
+  <div class="side">
+    <div class="players" id="players"></div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<div class="mask" id="mModal"><div class="modal" id="mContent"></div></div>
+<div class="err-toast" id="errToast"></div>
+
+<div class="start-screen" id="startScreen">
+  <div class="start-card">
+    <h1>好友大富翁</h1>
+    <p>联网版 · 各自手机打开同一网址<br>房主创建房间，把房间号发给朋友加入</p>
+    <div class="tabs">
+      <div class="tab sel" id="tabCreate">创建房间</div>
+      <div class="tab" id="tabJoin">加入房间</div>
+    </div>
+    <div class="field"><label>你的昵称</label><input id="inName" maxlength="6" value="玩家1"></div>
+    <div id="joinCodeField" style="display:none"><div class="field"><label>房间号</label><input id="inCode" maxlength="4" placeholder="4位数字"></div></div>
+    <button class="btn primary" id="btnEnter" style="width:100%;margin-top:8px">创建房间</button>
+    <div class="lobby" id="lobby" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+/* ===== 与服务端共享的常量（用于显示） ===== */
+const COLORS={brown:'#8b5a2b',lblue:'#aae0ff',pink:'#ff7eb6',orange:'#ffb347',red:'#e23b3b',yellow:'#ffd23f',green:'#2e8b57',dblue:'#1b3a8b',rr:'#3a3a3a',util:'#6b6b6b'};
+const GROUPS={brown:{n:2,house:50},lblue:{n:3,house:50},pink:{n:3,house:100},orange:{n:3,house:100},red:{n:3,house:150},yellow:{n:3,house:150},green:{n:3,house:200},dblue:{n:2,house:200}};
+const SPACES=[{t:'go',name:'起点'},{t:'prop',name:'胡同甲',g:'brown',price:60,rent:[2,10,30,90,160,250]},{t:'fate',name:'命运'},{t:'prop',name:'胡同乙',g:'brown',price:60,rent:[4,20,60,180,320,450]},{t:'tax',name:'所得税',amount:200},{t:'rr',name:'北方车站',price:200},{t:'prop',name:'小镇甲',g:'lblue',price:100,rent:[6,30,90,270,400,550]},{t:'chance',name:'机会'},{t:'prop',name:'小镇乙',g:'lblue',price:100,rent:[6,30,90,270,400,550]},{t:'prop',name:'小镇丙',g:'lblue',price:120,rent:[8,40,100,300,450,600]},{t:'jail',name:'监狱'},{t:'prop',name:'老街甲',g:'pink',price:140,rent:[10,50,150,450,625,750]},{t:'util',name:'电力公司',price:150},{t:'prop',name:'老街乙',g:'pink',price:140,rent:[10,50,150,450,625,750]},{t:'prop',name:'老街丙',g:'pink',price:160,rent:[12,60,180,500,700,900]},{t:'rr',name:'东方车站',price:200},{t:'prop',name:'新区甲',g:'orange',price:180,rent:[14,70,200,550,700,900]},{t:'fate',name:'命运'},{t:'prop',name:'新区乙',g:'orange',price:180,rent:[14,70,200,550,700,900]},{t:'prop',name:'新区丙',g:'orange',price:200,rent:[16,80,220,600,800,1000]},{t:'parking',name:'免费停车'},{t:'prop',name:'商街甲',g:'red',price:220,rent:[18,90,250,700,875,1050]},{t:'fate',name:'命运'},{t:'prop',name:'商街乙',g:'red',price:220,rent:[18,90,250,700,875,1050]},{t:'prop',name:'商街丙',g:'red',price:240,rent:[20,100,300,750,925,1100]},{t:'rr',name:'南方车站',price:200},{t:'prop',name:'金融甲',g:'yellow',price:260,rent:[22,110,330,800,975,1150]},{t:'chance',name:'机会'},{t:'prop',name:'金融乙',g:'yellow',price:260,rent:[22,110,330,800,975,1150]},{t:'prop',name:'金融丙',g:'yellow',price:280,rent:[24,120,360,850,1025,1200]},{t:'gotojail',name:'入狱'},{t:'prop',name:'豪宅甲',g:'green',price:300,rent:[26,130,390,900,1100,1275]},{t:'prop',name:'豪宅乙',g:'green',price:300,rent:[26,130,390,900,1100,1275]},{t:'fate',name:'命运'},{t:'prop',name:'豪宅丙',g:'green',price:320,rent:[28,150,450,1000,1200,1400]},{t:'rr',name:'西方车站',price:200},{t:'chance',name:'机会'},{t:'prop',name:'富豪甲',g:'dblue',price:350,rent:[35,175,500,1100,1300,1500]},{t:'tax',name:'奢侈税',amount:100},{t:'prop',name:'富豪乙',g:'dblue',price:400,rent:[50,200,600,1400,1700,2000]}];
+const ITEMS={rentfree:{name:'🛡️免租卡',desc:'本次需付租金时自动免单'},x2rent:{name:'💰双倍收租',desc:'本回合收到的租金翻倍'},teleport:{name:'🚕传送卡',desc:'移动到指定格子'},steal:{name:'🕵️偷钱卡',desc:'从某玩家偷取100'},protect:{name:'💸收保护费',desc:'向所有其他玩家各收50'},swap:{name:'🔄换房卡',desc:'与某玩家交换一块地产'},freeze:{name:'🧊冻结卡',desc:'指定玩家下回合跳过'},reroll:{name:'🎲重骰卡',desc:'本回合重新掷骰'},lucky:{name:'🎁幸运卡',desc:'获得一个随机道具'},troll:{name:'😈损友卡',desc:'指定玩家付100给银行'}};
+
+/* ===== 状态 ===== */
+let S=null;     // 最新快照
+let myId=null;
+let ws=null;
+let tabMode='create';
+const $=id=>document.getElementById(id);
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+function isProp(i){const t=SPACES[i].t;return t==='prop'||t==='rr'||t==='util';}
+function ownsFullGroup(snap,pid,g){const idxs=SPACES.map((s,i)=>s.g===g?i:-1).filter(i=>i>=0);return idxs.every(i=>snap.owners[i]===pid);}
+function posToCell(p){if(p<=10)return{r:10,c:10-p};if(p<=20)return{r:20-p,c:0};if(p<=30)return{r:0,c:p-20};return{r:p-30,c:10};}
+
+/* ===== 连接 ===== */
+function connect(){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  ws=new WebSocket(`${proto}://${location.host}`);
+  ws.onopen=()=>{$('connStatus').textContent='已连接';$('connStatus').classList.add('on');};
+  ws.onclose=()=>{$('connStatus').textContent='已断开，3秒重连…';$('connStatus').classList.remove('on');setTimeout(connect,3000);};
+  ws.onmessage=(e)=>{
+    let m;try{m=JSON.parse(e.data);}catch{return;}
+    if(m.type==='hello'){myId=m.yourId;}
+    else if(m.type==='room'){renderLobby(m);}
+    else if(m.type==='state'){S=m.snapshot;renderAll();}
+    else if(m.type==='error'){showErr(m.msg);}
+  };
+}
+
+function send(obj){if(ws&&ws.readyState===1)ws.send(JSON.stringify(obj));}
+function showErr(msg){const t=$('errToast');t.textContent=msg;t.classList.add('show');clearTimeout(showErr._t);showErr._t=setTimeout(()=>t.classList.remove('show'),2500);}
+
+/* ===== 大厅 ===== */
+$('tabCreate').onclick=()=>{tabMode='create';$('tabCreate').classList.add('sel');$('tabJoin').classList.remove('sel');$('joinCodeField').style.display='none';$('btnEnter').textContent='创建房间';};
+$('tabJoin').onclick=()=>{tabMode='join';$('tabJoin').classList.add('sel');$('tabCreate').classList.remove('sel');$('joinCodeField').style.display='block';$('btnEnter').textContent='加入房间';};
+$('btnEnter').onclick=()=>{
+  const name=$('inName').value.trim()||'玩家';
+  if(tabMode==='create') send({type:'createRoom',name});
+  else{const code=$('inCode').value.trim();if(!/^\d{4}$/.test(code)){showErr('请输入4位房间号');return;}send({type:'joinRoom',code,name});}
+};
+function renderLobby(r){
+  $('lobby').style.display='block';
+  const isHost=r.hostId===myId;
+  let html=`<div class="code-row"><div>房间号</div><b>${r.code}</b><button class="btn small" onclick="navigator.clipboard.writeText('${r.code}');showErr('已复制房间号')">复制</button></div>`;
+  html+=`<div class="plist">`;
+  r.players.forEach(p=>{html+=`<div class="pl"><div class="sw" style="background:${p.color}"></div>${p.av} ${p.name}${p.id===r.hostId?' 👑(房主)':''}</div>`;});
+  html+=`</div>`;
+  if(r.started){html+=`<div class="row" style="color:var(--good)">游戏已开始！</div>`;}
+  else{
+    html+=`<div class="row" style="color:var(--dim);font-size:11px">${r.players.length}/4 人，至少2人可开始。把房间号发给朋友让他们加入。</div>`;
+    if(isHost) html+=`<button class="btn primary" id="btnStart" ${r.players.length<2?'disabled':''} style="width:100%">开始游戏</button>`;
+    else html+=`<div class="waiting">等待房主开始游戏…</div>`;
+  }
+  $('lobby').innerHTML=html;
+  const bs=$('btnStart');if(bs)bs.onclick=()=>send({type:'start'});
+}
+
+/* ===== 棋盘渲染（静态结构，一次） ===== */
+function renderBoard(){
+  const b=$('board');b.innerHTML='';
+  const grid=Array.from({length:11},()=>Array(11).fill(null));
+  for(let p=0;p<40;p++){const{r,c}=posToCell(p);grid[r][c]=p;}
+  for(let r=0;r<11;r++)for(let c=0;c<11;c++){
+    const cell=el('div','cell');const p=grid[r][c];
+    if(p==null){if(r>=1&&r<=9&&c>=1&&c<=9)continue;cell.style.visibility='hidden';b.appendChild(cell);continue;}
+    const s=SPACES[p];if(p%10===0)cell.classList.add('corner');
+    if(s.g){const bar=el('div','bar');bar.style.background=COLORS[s.g];cell.appendChild(bar);}
+    else if(s.t==='rr'||s.t==='util'){const bar=el('div','bar');bar.style.background=COLORS[s.t==='rr'?'rr':'util'];cell.appendChild(bar);}
+    else if(s.t==='chance'){const bar=el('div','bar');bar.style.background='#7b5cff';cell.appendChild(bar);}
+    else if(s.t==='fate'){const bar=el('div','bar');bar.style.background='#ff5da2';cell.appendChild(bar);}
+    const nm=el('div','nm');nm.textContent=s.name;cell.appendChild(nm);
+    if(s.price){const pr=el('div','pr');pr.textContent='¥'+s.price;cell.appendChild(pr);}
+    if(s.t==='tax'){const pr=el('div','pr');pr.textContent='-¥'+s.amount;cell.appendChild(pr);}
+    if(s.t==='chance'||s.t==='fate'){const ev=el('div','ev');ev.textContent='抽卡';cell.appendChild(ev);}
+    cell.dataset.pos=p;b.appendChild(cell);
+  }
+  const center=el('div','center');center.style.gridRow='2/11';center.style.gridColumn='2/11';
+  center.innerHTML=`<div class="logo">大富翁</div><div class="dice-box"><div class="die" id="die1">1</div><div class="die" id="die2">1</div></div><div class="roll-res" id="rollRes">等待掷骰</div><button class="btn primary" id="btnRoll" disabled>🎲 掷骰子</button>`;
+  b.appendChild(center);
+  $('btnRoll').onclick=()=>send({type:'roll'});
+}
+
+/* ===== 动态刷新 ===== */
+function renderAll(){
+  if(!S)return;
+  $('startScreen').style.display='none';
+  $('gameMain').style.display='flex';
+  if(!$('board').children.length) renderBoard();
+  refreshBoardDecor();
+  renderPlayers();
+  renderLog();
+  renderTopbar();
+  renderPending();
+}
+
+function refreshBoardDecor(){
+  const cells=$('board').querySelectorAll('.cell[data-pos]');
+  cells.forEach(cell=>{
+    cell.querySelectorAll('.own,.houses,.tok').forEach(e=>e.remove());
+    const p=+cell.dataset.pos;const s=SPACES[p];const owner=S.owners[p];
+    if(owner!=null){const o=el('div','own');o.style.background=S.players[owner].color;cell.appendChild(o);}
+    if(s.g&&S.houses[p]>0){const h=el('div','houses');const n=S.houses[p];if(n===5){const i=el('i','hotel');h.appendChild(i);}else{for(let k=0;k<n;k++)h.appendChild(el('i'));}cell.appendChild(h);}
+    const tok=el('div','tok');S.players.forEach(pl=>{if(pl.alive&&pl.pos===p){const i=el('i');i.style.background=pl.color;i.title=pl.name;tok.appendChild(i);}});if(tok.children.length)cell.appendChild(tok);
+  });
+}
+
+function renderPlayers(){
+  const box=$('players');box.innerHTML='';
+  S.players.forEach(p=>{
+    const card=el('div','player'+(S.turnIdx===p.id?' active':''));card.style.borderLeftColor=p.color;
+    let meta=`<span>💰 <b>${p.cash}</b></span><span class="props">🏠 ${p.props.length}</span>`;
+    const rr=p.props.filter(i=>SPACES[i].t==='rr').length,ut=p.props.filter(i=>SPACES[i].t==='util').length;
+    if(rr)meta+=`<span>🚂${rr}</span>`;if(ut)meta+=`<span>⚡${ut}</span>`;
+    if(p.jailTurns>0)meta+=`<span>🔒${p.jailTurns}</span>`;if(p.skipNext)meta+=`<span>🧊冻结</span>`;if(p.x2rentThisTurn)meta+=`<span>💰x2</span>`;
+    if(!p.alive)meta=`<span style="color:var(--bad)">已破产</span>`;
+    if(p.offline)meta+=`<span style="color:var(--bad)">离线</span>`;
+    let itemsHtml='';const myTurn=(S.turnIdx===p.id&&p.id===myId&&p.alive);
+    p.items.forEach((it,idx)=>{itemsHtml+=`<span class="item-chip${myTurn?' use':''}" data-item="${it}" data-pi="${p.id}" title="${ITEMS[it].desc}">${ITEMS[it].name}</span>`;});
+    card.innerHTML=`<div class="top"><div class="av" style="background:${p.color}"></div><div class="name">${p.av} ${p.name}${p.id===myId?'(我)':''}</div><div class="cash">${p.alive?'¥'+p.cash:'—'}</div></div><div class="meta">${meta}</div>${itemsHtml?`<div class="items">${itemsHtml}</div>`:''}`;
+    box.appendChild(card);
+  });
+  box.querySelectorAll('.item-chip.use').forEach(ch=>{ch.onclick=()=>send({type:'useItem',itemKey:ch.dataset.item});});
+}
+
+function renderLog(){
+  const box=$('log');box.innerHTML='';
+  S.logs.forEach(l=>{const li=el('div','li '+(l.cls||''));li.innerHTML=l.msg;box.appendChild(li);});
+  box.scrollTop=box.scrollHeight;
+}
+
+function renderTopbar(){
+  const cur=S.players[S.turnIdx];
+  $('curPlayer').textContent=cur?cur.name:'—';
+  $('turnNum').textContent=S.turn+1;
+  const pm={roll:'掷骰阶段',move:'移动结算',jail:'监狱',reroll:'可重骰',over:'游戏结束'};
+  $('phasePill').textContent=pm[S.phase]||S.phase;
+  const myTurn=S.turnIdx===myId&&cur&&cur.alive&&S.phase!=='over';
+  $('btnRoll').disabled=!(myTurn&&(S.phase==='roll'||S.phase==='reroll'));
+  const rollRes=$('rollRes');
+  if(S.dice){$('die1').textContent=S.dice[0];$('die2').textContent=S.dice[1];}
+  rollRes.textContent= myTurn ? '轮到你掷骰' : (cur?`等待 ${cur.name} 掷骰`:'');
+  $('btnTrade').disabled=!(myTurn);
+  $('btnBuild').disabled=!(myTurn);
+  $('btnResign').disabled=!myTurn;
+  if(S.phase==='over'&&S.winner!=null){
+    const w=S.players[S.winner];
+    openModal(`<div class="win-screen"><div class="crown">👑</div><h2>大赢家</h2><div class="row" style="font-size:18px;color:${w.color}">${w.av} ${w.name}</div><div class="actions"><button class="btn primary" onclick="location.reload()">返回大厅</button></div></div>`);
+  }
+}
+
+/* ===== 待决策弹窗 ===== */
+function renderPending(){
+  const pd=S.pending;
+  if(!pd){closeModal();return;}
+  const mine=pd.forId===myId;
+  // 拍卖：公共，yourTurn 才可操作
+  if(pd.type==='auction'){
+    if(pd.yourTurn){
+      openModal(`<h2>🔨 拍卖：${SPACES[pd.pos].name}</h2>
+        <div class="row">当前最高出价：<b style="color:var(--accent)">¥${pd.bid}</b>${pd.topBidder!==null?`（${pd.topBidderName}）`:''}</div>
+        <div class="row">轮到你出价（现金 ¥${pd.curCash}）</div>
+        <div class="field"><label>出价</label><input id="bidInput" type="number" min="${pd.bid+10}" value="${pd.bid+10}"></div>
+        <div class="actions"><button class="btn" onclick="send({type:'auctionPass'})">弃权</button><button class="btn primary" onclick="auctionBid()">出价</button></div>`);
+      setTimeout(()=>$('bidInput')?.focus(),50);
+    }else{
+      openModal(`<h2>🔨 拍卖：${SPACES[pd.pos].name}</h2>
+        <div class="row">当前最高出价：<b style="color:var(--accent)">¥${pd.bid}</b>${pd.topBidder!==null?`（${pd.topBidderName}）`:''}</div>
+        <div class="waiting">等待 ${pd.curName} 出价…</div>`);
+    }
+    return;
+  }
+  if(!mine){
+    // 别人在决策
+    if(pd.type==='trade'&&pd.forId!==myId){
+      // 别人收到交易提议在回应，我只显示等待
+      openModal(`<div class="waiting">等待交易回应…</div>`);
+    }else if(pd.summary){
+      openModal(`<div class="waiting">${pd.summary}</div>`);
+    }else{closeModal();}
+    return;
+  }
+  // 我的决策
+  switch(pd.type){
+    case 'buy':showBuyModal(pd);break;
+    case 'jail':showJailModal(pd);break;
+    case 'itemTarget':showItemTargetModal(pd);break;
+    case 'teleport':showTeleportModal(pd);break;
+    case 'swap':showSwapModal(pd);break;
+    case 'trade':showTradeRespModal(pd);break;
+    default:closeModal();
+  }
+}
+
+function showBuyModal(pd){
+  const s=SPACES[pd.pos];
+  openModal(`<h2>🏠 ${s.name}</h2>
+    <div class="row">${s.t==='prop'?`<span style="display:inline-block;width:14px;height:14px;background:${COLORS[s.g]};border:1px solid #000;border-radius:3px;vertical-align:middle"></span> `:''}价格 <b style="color:var(--accent)">¥${s.price}</b> · 你现有 ¥${curPlayer().cash}</div>
+    <div class="row">${pd.canBuy?'是否购买？':'现金不足，可选择拍卖。'}</div>
+    <div class="actions">
+      <button class="btn" onclick="send({type:'auction'})">🔨 拍卖</button>
+      ${pd.canBuy?`<button class="btn primary" onclick="send({type:'buy'})">购买 ¥${s.price}</button>`:''}
+      <button class="btn" onclick="send({type:'skipBuy'})">跳过</button>
+    </div>`);
+}
+function showJailModal(pd){
+  openModal(`<h2>🔒 在监狱中</h2>
+    <div class="row">${curPlayer().av} ${curPlayer().name}，剩余 ${pd.jailTurns} 回合。</div>
+    <div class="row">交 ¥${50} 保释后立即掷骰移动，或尝试掷双数出狱。</div>
+    <div class="actions"><button class="btn" onclick="send({type:'jailPay'})">交¥50保释</button><button class="btn primary" onclick="send({type:'jailRoll'})">掷骰尝试</button></div>`);
+}
+function showItemTargetModal(pd){
+  const itemName=ITEMS[pd.itemKey].name;
+  let sel=pd.targetInfos[0].id;
+  const list=el('div','list');
+  pd.targetInfos.forEach(o=>{const d=el('div','opt'+(sel===o.id?' sel':''));d.innerHTML=`<div class="swatch" style="background:${o.color}"></div>${o.av} ${o.name}（¥${o.cash}）`;d.onclick=()=>{sel=o.id;list.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');};list.appendChild(d);});
+  $('mContent').innerHTML=`<h2>${itemName}</h2><div class="row">选择目标</div><div class="actions"><button class="btn primary" id="okT">确认</button><button class="btn" onclick="send({type:'cancelPending'})">取消</button></div>`;
+  $('mContent').insertBefore(list,$('mContent').querySelector('.actions'));
+  $('mModal').classList.add('show');
+  $('okT').onclick=()=>send({type:'itemTarget',targetId:sel});
+}
+function showTeleportModal(pd){
+  let sel=pd.targetInfos[0].i;
+  const list=el('div','list');
+  pd.targetInfos.forEach(o=>{const d=el('div','opt'+(sel===o.i?' sel':''));d.innerHTML=`<div class="swatch" style="background:${COLORS[o.g]||'#888'}"></div>${o.name}${o.price?' ¥'+o.price:''}`;d.onclick=()=>{sel=o.i;list.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');};list.appendChild(d);});
+  $('mContent').innerHTML=`<h2>🚕 传送卡</h2><div class="row">选择传送目标</div><div class="actions"><button class="btn primary" id="okT">传送</button><button class="btn" onclick="send({type:'cancelPending'})">取消</button></div>`;
+  $('mContent').insertBefore(list,$('mContent').querySelector('.actions'));
+  $('mModal').classList.add('show');
+  $('okT').onclick=()=>send({type:'teleport',pos:sel});
+}
+function showSwapModal(pd){
+  let mySel=pd.myPropInfos[0].i;
+  let tSel=pd.targetInfos[0].id;
+  let tProp=pd.targetInfos[0].theirProps[0].i;
+  const mkRow=(label,list)=>{const w=el('div');w.innerHTML=`<div class="row" style="color:var(--dim);font-size:11px">${label}</div>`;w.appendChild(list);return w;};
+  const myL=el('div','list'),pL=el('div','list'),tL=el('div','list');
+  const sw=i=>`<div class="swatch" style="background:${COLORS[SPACES[i].g]||'#888'}"></div>`;
+  function buildMy(){myL.innerHTML='';pd.myPropInfos.forEach(o=>{const d=el('div','opt'+(mySel===o.i?' sel':''));d.innerHTML=sw(o.i)+o.name;d.onclick=()=>{mySel=o.i;myL.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');};myL.appendChild(d);});}
+  function buildPlayers(){pL.innerHTML='';pd.targetInfos.forEach(o=>{const d=el('div','opt'+(tSel===o.id?' sel':''));d.innerHTML=`<div class="swatch" style="background:${o.color}"></div>${o.av} ${o.name}`;d.onclick=()=>{tSel=o.id;tProp=o.theirProps[0].i;buildTheir();pL.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');};pL.appendChild(d);});}
+  function buildTheir(){const ti=pd.targetInfos.find(x=>x.id===tSel);tL.innerHTML='';ti.theirProps.forEach(o=>{const d=el('div','opt'+(tProp===o.i?' sel':''));d.innerHTML=sw(o.i)+o.name;d.onclick=()=>{tProp=o.i;tL.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');};tL.appendChild(d);});}
+  buildMy();buildPlayers();buildTheir();
+  $('mContent').innerHTML=`<h2>🔄 换房卡</h2><div class="actions"><button class="btn primary" id="okS">交换</button><button class="btn" onclick="send({type:'cancelPending'})">取消</button></div>`;
+  const acts=$('mContent').querySelector('.actions');
+  $('mContent').insertBefore(mkRow('你的地产',myL),acts);
+  $('mContent').insertBefore(mkRow('交换对象',pL),acts);
+  $('mContent').insertBefore(mkRow('对方地产',tL),acts);
+  $('mModal').classList.add('show');
+  $('okS').onclick=()=>send({type:'swap',myPos:mySel,targetId:tSel,theirPos:tProp});
+}
+function showTradeRespModal(pd){
+  const o=pd.offer;const from=pd.fromName;
+  openModal(`<h2>🤝 交易提议</h2>
+    <div class="row"><b>${from}</b> 提议与你交易：</div>
+    <div class="row" style="background:#0c1222;padding:8px;border-radius:8px">
+      对方给出：¥${o.giveCash} + ${o.giveProps.map(i=>SPACES[i].name).join('、')||'无'}<br>
+      你给出：¥${o.wantCash} + ${o.wantProps.map(i=>SPACES[i].name).join('、')||'无'}
+    </div>
+    <div class="actions"><button class="btn" onclick="send({type:'tradeReject'})">拒绝</button><button class="btn primary" onclick="send({type:'tradeAccept'})">接受</button></div>`);
+}
+function auctionBid(){const v=+$('bidInput').value;send({type:'auctionBid',amount:v});}
+
+function curPlayer(){return S.players.find(p=>p.id===myId);}
+
+/* ===== 主动操作：交易/建房 ===== */
+$('btnTrade').onclick=openTrade;
+$('btnBuild').onclick=openBuild;
+$('btnResign').onclick=()=>{if(confirm(curPlayer().name+' 确认认输？'))send({type:'resign'});};
+
+function openTrade(){
+  const me=curPlayer();
+  const others=S.players.filter(p=>p.id!==myId&&p.alive);
+  if(!others.length){showErr('无可交易对象');return;}
+  let tSel=others[0].id;let giveCash=0,wantCash=0;let giveProps=new Set(),wantProps=new Set();
+  const myProps=me.props.filter(isProp);
+  const tL=el('div','list');others.forEach(o=>{const d=el('div','opt'+(tSel===o.id?' sel':''));d.innerHTML=`<div class="swatch" style="background:${o.color}"></div>${o.av} ${o.name}`;d.onclick=()=>{tSel=o.id;rebuild();tL.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');};tL.appendChild(d);});
+  let myPL,tPL;
+  function rebuild(){
+    myPL.innerHTML='';myProps.forEach(i=>{const s=SPACES[i];const d=el('div','opt'+(giveProps.has(i)?' sel':''));d.innerHTML=`<div class="swatch" style="background:${COLORS[s.g]||'#888'}"></div>${s.name}`;d.onclick=()=>{if(giveProps.has(i))giveProps.delete(i);else giveProps.add(i);rebuild();};myPL.appendChild(d);});
+    const t=S.players.find(p=>p.id===tSel);
+    tPL.innerHTML='';t.props.filter(isProp).forEach(i=>{const s=SPACES[i];const d=el('div','opt'+(wantProps.has(i)?' sel':''));d.innerHTML=`<div class="swatch" style="background:${COLORS[s.g]||'#888'}"></div>${s.name}`;d.onclick=()=>{if(wantProps.has(i))wantProps.delete(i);else wantProps.add(i);rebuild();};tPL.appendChild(d);});
+    $('trGiveCash').textContent='¥'+giveCash;$('trWantCash').textContent='¥'+wantCash;
+    $('trSummary').innerHTML=`你给出：¥${giveCash} + ${[...giveProps].map(i=>SPACES[i].name).join('、')||'无'}<br>对方给出：¥${wantCash} + ${[...wantProps].map(i=>SPACES[i].name).join('、')||'无'}`;
+  }
+  $('mContent').innerHTML=`<h2>🤝 发起交易</h2><div class="row" style="color:var(--dim);font-size:11px">交易对象</div><div class="row" style="color:var(--dim);font-size:11px">你给出的地产</div><div class="row" style="color:var(--dim);font-size:11px">你给现金 <button class="btn small" id="trGiveUp">+50</button> <span id="trGiveCash" style="color:var(--accent)">¥0</span></div><div class="row" style="color:var(--dim);font-size:11px">对方给的地产</div><div class="row" style="color:var(--dim);font-size:11px">对方给现金 <button class="btn small" id="trWantUp">+50</button> <span id="trWantCash" style="color:var(--accent)">¥0</span></div><div class="row" id="trSummary" style="background:#0c1222;padding:8px;border-radius:8px"></div><div class="actions"><button class="btn primary" id="okTrade">发送提议</button><button class="btn" onclick="closeModal()">取消</button></div>`;
+  const acts=$('mContent').querySelector('.actions');myPL=el('div','list');tPL=el('div','list');
+  const rows=$('mContent').querySelectorAll('.row');
+  $('mContent').insertBefore(tL,rows[1]);$('mContent').insertBefore(myPL,rows[2]);$('mContent').insertBefore(tPL,rows[4]);
+  $('mModal').classList.add('show');rebuild();
+  $('trGiveUp').onclick=()=>{giveCash=Math.min(giveCash+50,me.cash);rebuild();};
+  $('trWantUp').onclick=()=>{wantCash+=50;rebuild();};
+  $('okTrade').onclick=()=>{send({type:'tradeOffer',offer:{targetId:tSel,giveCash,giveProps:[...giveProps],wantCash,wantProps:[...wantProps]}});closeModal();};
+}
+
+function openBuild(){
+  const me=curPlayer();
+  const buildable=[];
+  SPACES.forEach((s,i)=>{if(s.g&&S.owners[i]===myId&&ownsFullGroup(S,myId,s.g)&&S.houses[i]<5)buildable.push(i);});
+  if(!buildable.length){showErr('无可建房产（需拥有完整同色组且未满5座）');return;}
+  let sel=buildable[0];
+  const list=el('div','list');
+  buildable.forEach(i=>{const s=SPACES[i];const cost=GROUPS[s.g].house;const d=el('div','opt'+(sel===i?' sel':''));d.innerHTML=`<div class="swatch" style="background:${COLORS[s.g]}"></div>${s.name}（${S.houses[i]>=5?'酒店':S.houses[i]+'座'}，建房¥${cost}）`;d.onclick=()=>{sel=i;list.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');};list.appendChild(d);});
+  $('mContent').innerHTML=`<h2>🔨 建房</h2><div class="row">选择地产（现金¥${me.cash}）</div><div class="actions"><button class="btn primary" id="okB">建房</button><button class="btn" onclick="closeModal()">取消</button></div>`;
+  $('mContent').insertBefore(list,$('mContent').querySelector('.actions'));
+  $('mModal').classList.add('show');
+  $('okB').onclick=()=>{send({type:'build',pos:sel});closeModal();};
+}
+
+/* ===== 模态通用 ===== */
+function openModal(html){$('mContent').innerHTML=html;$('mModal').classList.add('show');}
+function closeModal(){if(S&&S.pending&&S.pending.forId!==myId&&S.pending.type!=='auction'){/*别关掉"等待"提示*/}else{$('mModal').classList.remove('show');}}
+$('mModal').onclick=e=>{if(e.target.id==='mModal'&&S&&(!S.pending||S.pending.forId!==myId))$('mModal').classList.remove('show');};
+
+connect();
+</script>
+</body>
+</html>

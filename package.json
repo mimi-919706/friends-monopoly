@@ -1,0 +1,12 @@
+{
+  "name": "friends-monopoly",
+  "version": "1.0.0",
+  "description": "好友大富翁 联网版（Node + WebSocket）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

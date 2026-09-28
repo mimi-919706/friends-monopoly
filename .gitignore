@@ -1,0 +1,5 @@
+node_modules/
+*.log
+.trae-html-share-packages/
+server.log
+tunnel.log
